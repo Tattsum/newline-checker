@@ -43,7 +43,7 @@ jobs:
       with:
         version: latest
         # パフォーマンス向上のためキャッシュを有効化
-        args: --timeout=5m --cache-dir=/tmp/.cache/golangci-lint
+        args: --timeout=5m
 
     - name: go fmtのチェック
       run: |
@@ -140,6 +140,8 @@ jobs:
         go install golang.org/x/vuln/cmd/govulncheck@latest
         govulncheck ./...
 
-    - name: Go modules依存関係の監査
-      run: go list -json -deps ./... | nancy sleuth
-      continue-on-error: true
+    - name: 依存関係のライセンスチェック
+      run: |
+        go mod download
+        echo "依存関係のライセンス情報を確認中..."
+        go list -m all

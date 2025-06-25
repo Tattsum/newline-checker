@@ -1,0 +1,136 @@
+# golangci-lintの設定ファイル
+# セキュリティとコード品質を重視した設定
+
+run:
+  # タイムアウト設定
+  timeout: 5m
+  
+  # テストファイルもlinting対象に含める
+  tests: true
+  
+  # Go modules有効化
+  modules-download-mode: readonly
+
+# 出力設定
+output:
+  # 問題の詳細を表示
+  print-issued-lines: true
+  # 問題のあるコードを表示
+  print-linter-name: true
+  # 出力フォーマット
+  format: colored-line-number
+
+linters:
+  # 有効にするlinter
+  enable:
+    # デフォルト（必須）
+    - errcheck      # エラーハンドリングチェック
+    - gosimple      # コード簡略化の提案
+    - govet         # Go vetの問題検出
+    - ineffassign   # 無効な代入のチェック
+    - staticcheck   # 静的解析
+    - typecheck     # 型チェック
+    - unused        # 未使用コードの検出
+    
+    # セキュリティ関連
+    - gosec         # セキュリティ問題の検出
+    - gocritic      # 包括的なコード改善提案
+    
+    # コード品質
+    - gocyclo       # 循環複雑度の計測
+    - gofmt         # フォーマット問題の検出
+    - goimports     # import文の整理
+    - goconst       # 定数化可能な値の検出
+    - misspell      # スペルミスの検出
+    - unconvert     # 不要な型変換の検出
+    - unparam       # 未使用パラメータの検出
+    
+    # パフォーマンス
+    - prealloc      # スライスの事前確保に関する提案
+    
+    # 可読性・保守性
+    - godot         # コメントの句読点チェック
+    - whitespace    # 余分な空白の検出
+    - errname       # エラー名の規約チェック
+    - errorlint     # エラーハンドリングのベストプラクティス
+
+linters-settings:
+  # gosecの設定
+  gosec:
+    # 除外する脆弱性チェック（必要に応じて調整）
+    excludes:
+      - G104  # ファイル操作のエラーハンドリング（このプロジェクトでは適切に処理済み）
+    
+  # gocycloの設定（循環複雑度）
+  gocyclo:
+    min-complexity: 10
+    
+  # govetの設定
+  govet:
+    check-shadowing: true
+    
+  # errcheckの設定
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+    # 除外する関数（必要に応じて調整）
+    exclude-functions:
+      - fmt.Printf
+      - fmt.Println
+    
+  # gocriticの設定
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - experimental
+      - opinionated
+      - performance
+      - style
+    disabled-checks:
+      - dupImport # https://github.com/go-critic/go-critic/issues/845
+      - ifElseChain
+      - octalLiteral
+      - whyNoLint
+      - wrapperFunc
+      
+  # misspellの設定
+  misspell:
+    locale: US
+    ignore-words:
+      - Tattsum  # ユーザー名として除外
+
+issues:
+  # 除外パターン
+  exclude-rules:
+    # テストファイルでのエラーチェック緩和
+    - path: _test\.go
+      linters:
+        - gosec
+        - errcheck
+        - goconst
+        
+    # main.goでのexitコールは許可
+    - path: main\.go
+      linters:
+        - gosec
+      text: "G104:"
+      
+  # 同じ問題の重複表示を避ける
+  exclude-use-default: false
+  
+  # 最大表示問題数
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+severity:
+  # デフォルトの深刻度
+  default-severity: error
+  
+  # linter別の深刻度設定
+  rules:
+    - linters:
+        - misspell
+      severity: warning
+    - linters:
+        - godot
+      severity: info
