@@ -1,0 +1,145 @@
+name: CI
+
+# プルリクエストとプッシュ時にワークフローを実行
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+# セキュリティを考慮したワークフロー権限設定
+permissions:
+  contents: read
+
+jobs:
+  # Linting ジョブ
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+    - name: チェックアウト
+      uses: actions/checkout@v4
+
+    - name: Go環境のセットアップ
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24.4'
+        cache: true
+
+    - name: Go modulesの依存関係をダウンロード
+      run: go mod download
+
+    - name: go mod tidyの実行
+      run: go mod tidy
+
+    - name: go mod tidyでの変更がないことを確認
+      run: git diff --exit-code
+
+    - name: go vetの実行
+      run: go vet ./...
+
+    - name: golangci-lintの実行
+      uses: golangci/golangci-lint-action@v6
+      with:
+        version: latest
+        # パフォーマンス向上のためキャッシュを有効化
+        args: --timeout=5m --cache-dir=/tmp/.cache/golangci-lint
+
+    - name: go fmtのチェック
+      run: |
+        if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
+          echo "以下のファイルでフォーマットが正しくありません:"
+          gofmt -s -l .
+          exit 1
+        fi
+
+  # テストジョブ - 複数のGoバージョンとOSでテスト
+  test:
+    name: Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # 失敗時でも他のテストを継続実行
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        go-version: ['1.23', '1.24.4']
+    
+    steps:
+    - name: チェックアウト
+      uses: actions/checkout@v4
+
+    - name: Go環境のセットアップ
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ matrix.go-version }}
+        cache: true
+
+    - name: Go modulesの依存関係をダウンロード
+      run: go mod download
+
+    - name: テストの実行（カバレッジ付き）
+      run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+
+    - name: カバレッジレポートのアップロード（Codecov）
+      if: matrix.os == 'ubuntu-latest' && matrix.go-version == '1.24.4'
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage.out
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+
+  # ビルドテストジョブ
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    steps:
+    - name: チェックアウト
+      uses: actions/checkout@v4
+
+    - name: Go環境のセットアップ
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24.4'
+        cache: true
+
+    - name: Go modulesの依存関係をダウンロード
+      run: go mod download
+
+    - name: クロスプラットフォームビルドのテスト
+      run: |
+        GOOS=linux GOARCH=amd64 go build -v -o check-new-line-linux-amd64 .
+        GOOS=windows GOARCH=amd64 go build -v -o check-new-line-windows-amd64.exe .
+        GOOS=darwin GOARCH=amd64 go build -v -o check-new-line-darwin-amd64 .
+
+    - name: ビルド成果物のアップロード（デバッグ用）
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-artifacts
+        path: |
+          check-new-line-*
+        retention-days: 7
+
+  # セキュリティスキャンジョブ
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+    - name: チェックアウト
+      uses: actions/checkout@v4
+
+    - name: Go環境のセットアップ
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24.4'
+        cache: true
+
+    - name: govulncheckの実行（脆弱性チェック）
+      run: |
+        go install golang.org/x/vuln/cmd/govulncheck@latest
+        govulncheck ./...
+
+    - name: Go modules依存関係の監査
+      run: go list -json -deps ./... | nancy sleuth
+      continue-on-error: true
