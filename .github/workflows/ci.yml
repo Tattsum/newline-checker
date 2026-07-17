@@ -114,7 +114,7 @@ jobs:
         GOOS=darwin GOARCH=amd64 go build -v -o check-new-line-darwin-amd64 .
 
     - name: ビルド成果物のアップロード（デバッグ用）
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: build-artifacts
         path: |
