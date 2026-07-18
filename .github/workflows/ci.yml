@@ -39,7 +39,7 @@ jobs:
       run: go vet ./...
 
     - name: golangci-lintの実行
-      uses: golangci/golangci-lint-action@v6
+      uses: golangci/golangci-lint-action@v9
       with:
         version: latest
         # パフォーマンス向上のためキャッシュを有効化
