@@ -82,7 +82,7 @@ jobs:
 
     - name: カバレッジレポートのアップロード（Codecov）
       if: matrix.os == 'ubuntu-latest' && matrix.go-version == '1.24.4'
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v7
       with:
         file: ./coverage.out
         flags: unittests
