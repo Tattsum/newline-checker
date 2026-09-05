@@ -23,7 +23,7 @@ jobs:
     - name: Go環境のセットアップ
       uses: actions/setup-go@v5
       with:
-        go-version: '1.24.4'
+        go-version: '1.27.1'
         cache: true
 
     - name: Go modulesの依存関係をダウンロード
@@ -101,7 +101,7 @@ jobs:
     - name: Go環境のセットアップ
       uses: actions/setup-go@v5
       with:
-        go-version: '1.24.4'
+        go-version: '1.27.1'
         cache: true
 
     - name: Go modulesの依存関係をダウンロード
@@ -132,7 +132,7 @@ jobs:
     - name: Go環境のセットアップ
       uses: actions/setup-go@v5
       with:
-        go-version: '1.24.4'
+        go-version: '1.27.1'
         cache: true
 
     - name: govulncheckの実行（脆弱性チェック）
